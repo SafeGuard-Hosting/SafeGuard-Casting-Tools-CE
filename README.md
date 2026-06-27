@@ -9,7 +9,7 @@ registration forms, bulk email/SMS, availability checks and self-tape collection
 [![Live demo](https://img.shields.io/badge/live-demo-4d10da?style=flat-square)](https://demo.castingtools.ca)
 [![Website](https://img.shields.io/badge/website-castingtools.ca-1f1147?style=flat-square)](https://castingtools.ca)
 [![Self-host](https://img.shields.io/badge/self--host-free-22c55e?style=flat-square)](https://castingtools.ca/docs/self-hosting/)
-[![Image](https://img.shields.io/badge/ghcr.io-safeguard--casting--tools-2496ed?style=flat-square&logo=docker&logoColor=white)](https://github.com/SafeGuard-Hosting/SafeGuard-Casting-Tools-CE/pkgs/container/safeguard-casting-tools)
+[![Image](https://img.shields.io/badge/ghcr.io-safeguard--casting--tools-2496ed?style=flat-square&logo=docker&logoColor=white)](https://github.com/orgs/SafeGuard-Hosting/packages/container/package/safeguard-casting-tools)
 
 [**Live demo**](https://demo.castingtools.ca) · [**Website**](https://castingtools.ca) · [**Self-hosting guide**](https://castingtools.ca/docs/self-hosting/)
 
