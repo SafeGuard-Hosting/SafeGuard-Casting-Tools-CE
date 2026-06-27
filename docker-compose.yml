@@ -1,0 +1,57 @@
+# Casting Tools — Community Edition. Two containers: the app (a single binary
+# that serves the API + web UI) and PostgreSQL. Fill in .env, then:
+#   docker compose up -d
+#
+# The app listens on :8080. Front it with your own reverse proxy for TLS
+# (Caddy, nginx, Traefik, Cloudflare Tunnel, …). Single-tenant: the app connects
+# as the Postgres superuser the db container creates from CT_SUPER_PASSWORD, so
+# there's nothing to provision and no init scripts to drift.
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: castingtools
+      POSTGRES_PASSWORD: ${CT_SUPER_PASSWORD:?set CT_SUPER_PASSWORD in .env}
+      POSTGRES_DB: ${CT_DB_NAME:-castingtools}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U castingtools -d ${CT_DB_NAME:-castingtools}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  app:
+    # Pin a version (e.g. :v1.3.0) instead of :latest for reproducible deploys.
+    image: ghcr.io/safeguard-hosting/safeguard-casting-tools:latest
+    pull_policy: always
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      CT_ENV: production
+      CT_ADDR: ":8080"
+      # CT_VERSION is baked into the image from its tag — do not set it here.
+      CT_DATABASE_URL: postgres://castingtools:${CT_SUPER_PASSWORD}@db:5432/${CT_DB_NAME:-castingtools}?sslmode=disable
+      CT_BACKUP_DATABASE_URL: postgres://castingtools:${CT_SUPER_PASSWORD}@db:5432/${CT_DB_NAME:-castingtools}?sslmode=disable
+      CT_SESSION_SECRET: ${CT_SESSION_SECRET:?set a 32+ byte secret in .env}
+      CT_APP_DOMAIN: ${CT_APP_DOMAIN:-}
+      # Trust your reverse proxy so client IPs / forwarded-proto are honoured.
+      CT_TRUSTED_PROXIES: ${CT_TRUSTED_PROXIES:-127.0.0.1/32,::1/128}
+      CT_MEDIA_DIR: /data/media
+      # First-boot owner (optional — omit to use the setup screen instead).
+      CT_INITIAL_OWNER_EMAIL: ${CT_INITIAL_OWNER_EMAIL:-}
+      CT_INITIAL_OWNER_PASSWORD: ${CT_INITIAL_OWNER_PASSWORD:-}
+      CT_INITIAL_OWNER_NAME: ${CT_INITIAL_OWNER_NAME:-Owner}
+      CT_INITIAL_COMPANY_NAME: ${CT_INITIAL_COMPANY_NAME:-My Workspace}
+      CT_INITIAL_COMPANY_SLUG: ${CT_INITIAL_COMPANY_SLUG:-app}
+    ports:
+      - "8080:8080"   # put a TLS reverse proxy in front; or bind 127.0.0.1:8080 if it's local
+    volumes:
+      - media_data:/data/media
+
+volumes:
+  db_data:
+  media_data:
