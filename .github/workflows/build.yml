@@ -1,0 +1,54 @@
+name: Build & publish Casting Tools image
+
+# Builds the app image from the PRIVATE source repo (checked out at build time
+# via the SOURCE_TOKEN secret) and publishes it under THIS public CE repo, so the
+# GHCR package is owned by CE while the source code stays in the private repo.
+# Manual only (workflow_dispatch) — never runs on fork PRs, so the SOURCE_TOKEN
+# is only usable by org members who can run this repo's Actions.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Private-repo ref to build (e.g. v1.3.0 or main)"
+        required: true
+        default: v1.3.0
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE: ghcr.io/safeguard-hosting/safeguard-casting-tools
+    steps:
+      - name: Check out the private source
+        uses: actions/checkout@v4
+        with:
+          repository: SafeGuard-Hosting/SafeGuard-Casting-Tools
+          ref: ${{ inputs.ref }}
+          token: ${{ secrets.SOURCE_TOKEN }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push (CE is the publisher → package is owned by this repo)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ inputs.ref }}
+            ${{ env.IMAGE }}:latest
+          labels: |
+            org.opencontainers.image.source=https://github.com/SafeGuard-Hosting/SafeGuard-Casting-Tools-CE
+            org.opencontainers.image.url=https://castingtools.ca
+            org.opencontainers.image.description=Casting Tools — the self-hosted casting database
+            org.opencontainers.image.vendor=SafeGuard Hosting
+          build-args: |
+            CT_VERSION=${{ inputs.ref }}
